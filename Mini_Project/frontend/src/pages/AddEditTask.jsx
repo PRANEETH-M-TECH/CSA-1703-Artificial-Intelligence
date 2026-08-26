@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useOutletContext } from "react-router-dom";
 import Sheet from "../components/Sheet";
 import { TasksAPI } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { TrashIcon } from "../components/Icons";
 
 const CATEGORIES = ["Study", "Work", "Fitness", "Personal", "Meeting", "General"];
@@ -12,16 +13,43 @@ function toLocalInputValue(iso) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+// Applies Module 3's accepted preferred hour (from the Recommendations screen)
+// to a deadline's time-of-day, keeping the date, pushing to tomorrow if that
+// hour has already passed today.
+function withPreferredHour(localValue, hour) {
+  const d = new Date(localValue);
+  d.setHours(hour, 0, 0, 0);
+  if (d.getTime() <= Date.now()) d.setDate(d.getDate() + 1);
+  return toLocalInputValue(d.toISOString());
+}
+
 export default function AddEditTask() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const { reload } = useOutletContext() || {};
+  const { user } = useAuth();
+  const preferredHours = user?.preferred_hours || {};
 
   const [form, setForm] = useState({
     title: "", category: "Study", deadline: toLocalInputValue(), duration_minutes: 60, priority: 2, notes: "",
   });
   const [busy, setBusy] = useState(false);
+  const [appliedHint, setAppliedHint] = useState(false);
+
+  const handleCategoryChange = (category) => {
+    setForm((f) => {
+      const next = { ...f, category };
+      const hour = preferredHours[category];
+      if (!isEdit && hour != null) {
+        next.deadline = withPreferredHour(f.deadline, hour);
+        setAppliedHint(true);
+      } else {
+        setAppliedHint(false);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (isEdit) {
@@ -64,7 +92,7 @@ export default function AddEditTask() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Category</label>
-            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+            <select value={form.category} onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none">
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -83,8 +111,14 @@ export default function AddEditTask() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Deadline</label>
-            <input type="datetime-local" required value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+            <input type="datetime-local" required value={form.deadline}
+              onChange={(e) => { setForm({ ...form, deadline: e.target.value }); setAppliedHint(false); }}
               className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none" />
+            {appliedHint && (
+              <p className="text-[11px] text-mint-400 mt-1.5">
+                ✓ Module 3 suggested {preferredHours[form.category]}:00 for {form.category} — applied
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1.5">Duration (min)</label>

@@ -57,6 +57,23 @@ def get_recommendations(current_user: User = Depends(get_current_user), db: Sess
     return [schemas.RecommendationOut(**r) for r in recs]
 
 
+@router.post("/api/recommendations/accept", response_model=schemas.UserOut)
+def accept_recommendation(payload: schemas.AcceptRecommendationRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """
+    Persists the accepted recommendation as a per-category preferred hour.
+    AddEditTask reads this back (via GET /auth/me) and pre-fills a new task's
+    deadline hour whenever its category matches — this is how Module 3's
+    output actually feeds back into what the user does next, rather than
+    the card just being dismissed with no effect.
+    """
+    preferred = dict(current_user.preferred_hours or {})
+    preferred[payload.category] = payload.best_hour
+    current_user.preferred_hours = preferred
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
 @router.get("/api/insights", response_model=schemas.InsightsOut)
 def get_insights(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     rows = _history_rows(db, current_user.id)

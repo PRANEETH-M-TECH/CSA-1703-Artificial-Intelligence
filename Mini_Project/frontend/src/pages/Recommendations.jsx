@@ -2,16 +2,27 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, useTransform } from "framer-motion";
 import { LearningAPI } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import { SparkleIcon, CheckIcon, CloseIcon } from "../components/Icons";
 
 export default function Recommendations() {
   const [recs, setRecs] = useState(null);
   const [dismissed, setDismissed] = useState([]);
+  const [justAccepted, setJustAccepted] = useState(null);
+  const { refreshUser } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => { LearningAPI.recommendations().then(setRecs); }, []);
 
   const visible = (recs || []).filter((r) => !dismissed.includes(r.category));
+
+  const accept = async (rec) => {
+    await LearningAPI.acceptRecommendation(rec.category, rec.best_hour);
+    await refreshUser?.();
+    setJustAccepted(rec);
+    setDismissed((d) => [...d, rec.category]);
+    setTimeout(() => setJustAccepted((cur) => (cur === rec ? null : cur)), 3200);
+  };
 
   return (
     <div className="p-6 max-w-lg mx-auto pb-16 min-h-[70vh] flex flex-col">
@@ -21,6 +32,17 @@ export default function Recommendations() {
         <h1 className="text-2xl font-display font-bold">Recommendations</h1>
       </div>
       <p className="text-slate-400 text-sm mb-8">Swipe right to accept, left to dismiss.</p>
+
+      <AnimatePresence>
+        {justAccepted && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="mb-4 px-4 py-3 rounded-lg bg-mint-500/15 border border-mint-500/30 text-mint-300 text-sm"
+          >
+            ✓ Applied — new "{justAccepted.category}" tasks now default to {justAccepted.best_hour}:00. Module 1 will prefer this slot next time you add one.
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex-1 relative">
         {recs === null ? (
@@ -39,6 +61,7 @@ export default function Recommendations() {
                   key={rec.category}
                   rec={rec}
                   stackIndex={arr.length - 1 - idx}
+                  onAccept={() => accept(rec)}
                   onDismiss={() => setDismissed((d) => [...d, rec.category])}
                 />
               ))}
@@ -50,7 +73,7 @@ export default function Recommendations() {
   );
 }
 
-function RecCard({ rec, stackIndex, onDismiss }) {
+function RecCard({ rec, stackIndex, onAccept, onDismiss }) {
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-12, 12]);
   const acceptOpacity = useTransform(x, [20, 120], [0, 1]);
@@ -68,7 +91,8 @@ function RecCard({ rec, stackIndex, onDismiss }) {
       dragConstraints={{ left: 0, right: 0 }}
       dragElastic={0.7}
       onDragEnd={(_, info) => {
-        if (Math.abs(info.offset.x) > 120) onDismiss();
+        if (info.offset.x > 120) onAccept();
+        else if (info.offset.x < -120) onDismiss();
       }}
       whileTap={isTop ? { cursor: "grabbing" } : {}}
     >
@@ -94,7 +118,7 @@ function RecCard({ rec, stackIndex, onDismiss }) {
             <button onClick={onDismiss} className="flex-1 py-2.5 rounded-lg bg-white/5 flex items-center justify-center gap-1.5 text-sm">
               <CloseIcon className="w-4 h-4" /> Dismiss
             </button>
-            <button onClick={onDismiss} className="flex-1 py-2.5 rounded-lg bg-grad-primary flex items-center justify-center gap-1.5 text-sm font-semibold">
+            <button onClick={onAccept} className="flex-1 py-2.5 rounded-lg bg-grad-primary flex items-center justify-center gap-1.5 text-sm font-semibold">
               <CheckIcon className="w-4 h-4" /> Accept
             </button>
           </div>

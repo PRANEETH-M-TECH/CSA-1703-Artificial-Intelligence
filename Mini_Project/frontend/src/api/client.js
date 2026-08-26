@@ -40,5 +40,6 @@ export const LearningAPI = {
   logHistory: (data) => client.post("/history", data).then((r) => r.data),
   train: () => client.post("/model/train").then((r) => r.data),
   recommendations: () => client.get("/recommendations").then((r) => r.data),
+  acceptRecommendation: (category, best_hour) => client.post("/recommendations/accept", { category, best_hour }).then((r) => r.data),
   insights: () => client.get("/insights").then((r) => r.data),
 };

@@ -26,6 +26,7 @@ class UserOut(BaseModel):
     email: EmailStr
     work_start_hour: int
     work_end_hour: int
+    preferred_hours: dict = {}
 
     class Config:
         from_attributes = True
@@ -131,6 +132,11 @@ class RecommendationOut(BaseModel):
     category: str
     message: str
     confidence: float
+    best_hour: int
+
+
+class AcceptRecommendationRequest(BaseModel):
+    category: str
     best_hour: int
 
 

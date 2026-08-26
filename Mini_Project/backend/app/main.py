@@ -5,11 +5,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
+from sqlalchemy import inspect, text
+
 from app.database import Base, engine, SessionLocal
 from app.routers import auth, tasks, schedule, conflicts, learning
 from app.seed import seed_demo_user
 
 Base.metadata.create_all(bind=engine)
+
+
+def _migrate_add_missing_columns():
+    """
+    Base.metadata.create_all only creates tables that don't exist yet — it
+    never adds new columns to a table that's already there. Since this
+    project uses a single evolving SQLite file with no Alembic migrations,
+    this adds any columns the current models define but an existing
+    database file predates (e.g. `preferred_hours`), so existing data
+    (tasks, history, etc.) isn't lost by needing to delete the db file.
+    """
+    inspector = inspect(engine)
+    if "users" not in inspector.get_table_names():
+        return
+    existing_columns = {c["name"] for c in inspector.get_columns("users")}
+    if "preferred_hours" not in existing_columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN preferred_hours JSON DEFAULT '{}'"))
+
+
+_migrate_add_missing_columns()
 
 app = FastAPI(
     title="TaskMind API",
