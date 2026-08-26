@@ -1,0 +1,116 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams, useOutletContext } from "react-router-dom";
+import Sheet from "../components/Sheet";
+import { TasksAPI } from "../api/client";
+import { TrashIcon } from "../components/Icons";
+
+const CATEGORIES = ["Study", "Work", "Fitness", "Personal", "Meeting", "General"];
+
+function toLocalInputValue(iso) {
+  const d = iso ? new Date(iso) : new Date(Date.now() + 3600_000);
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export default function AddEditTask() {
+  const { id } = useParams();
+  const isEdit = Boolean(id);
+  const navigate = useNavigate();
+  const { reload } = useOutletContext() || {};
+
+  const [form, setForm] = useState({
+    title: "", category: "Study", deadline: toLocalInputValue(), duration_minutes: 60, priority: 2, notes: "",
+  });
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (isEdit) {
+      TasksAPI.list().then((tasks) => {
+        const t = tasks.find((x) => String(x.id) === id);
+        if (t) setForm({ ...t, deadline: toLocalInputValue(t.deadline) });
+      });
+    }
+  }, [id, isEdit]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    const payload = { ...form, deadline: new Date(form.deadline).toISOString(), duration_minutes: Number(form.duration_minutes), priority: Number(form.priority) };
+    try {
+      if (isEdit) await TasksAPI.update(id, payload);
+      else await TasksAPI.create(payload);
+      reload?.();
+      navigate("/app/tasks");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const remove = async () => {
+    await TasksAPI.remove(id);
+    reload?.();
+    navigate("/app/tasks");
+  };
+
+  return (
+    <Sheet title={isEdit ? "Edit task" : "New task"} onCloseTo="/app/tasks">
+      <form onSubmit={submit} className="space-y-4">
+        <div>
+          <label className="block text-xs text-slate-400 mb-1.5">Title</label>
+          <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Category</label>
+            <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none">
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Priority</label>
+            <select value={form.priority} onChange={(e) => setForm({ ...form, priority: Number(e.target.value) })}
+              className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none">
+              <option value={1}>Low</option>
+              <option value={2}>Medium</option>
+              <option value={3}>High</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Deadline</label>
+            <input type="datetime-local" required value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })}
+              className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none" />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400 mb-1.5">Duration (min)</label>
+            <input type="number" min={15} step={15} required value={form.duration_minutes}
+              onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })}
+              className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs text-slate-400 mb-1.5">Notes</label>
+          <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={3}
+            className="w-full px-4 py-3 rounded-lg bg-white/5 border border-white/10 focus:border-accent-500 outline-none resize-none" />
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          {isEdit && (
+            <button type="button" onClick={remove} className="px-4 py-3.5 rounded-lg bg-coral-500/15 text-coral-400">
+              <TrashIcon className="w-5 h-5" />
+            </button>
+          )}
+          <button type="submit" disabled={busy} className="flex-1 py-3.5 rounded-lg bg-grad-primary font-display font-bold shadow-glow disabled:opacity-50">
+            {busy ? "Saving..." : isEdit ? "Save changes" : "Add task"}
+          </button>
+        </div>
+      </form>
+    </Sheet>
+  );
+}

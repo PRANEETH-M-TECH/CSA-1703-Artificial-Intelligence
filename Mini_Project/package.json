@@ -1,0 +1,20 @@
+{
+  "name": "taskmind",
+  "private": true,
+  "version": "1.0.0",
+  "description": "TaskMind — single-command dev & deploy scripts for the FastAPI backend + React frontend.",
+  "scripts": {
+    "install:frontend": "cd frontend && npm install",
+    "install:backend": "cd backend && venv\\Scripts\\python -m pip install -r requirements.txt",
+    "setup": "npm run install:frontend && cd backend && python -m venv venv && cd .. && npm run install:backend",
+    "dev:backend": "cd backend && venv\\Scripts\\python -m uvicorn app.main:app --reload --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "concurrently -n backend,frontend -c blue,green \"npm:dev:backend\" \"npm:dev:frontend\"",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && venv\\Scripts\\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "prod": "npm run build && npm run start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
