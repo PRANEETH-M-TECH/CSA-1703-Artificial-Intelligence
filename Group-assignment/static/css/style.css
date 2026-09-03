@@ -1,0 +1,217 @@
+* { box-sizing: border-box; }
+
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #10131a;
+  color: #eaeaf0;
+  margin: 0;
+  padding: 0;
+}
+
+header {
+  padding: 20px 32px;
+  background: #171b26;
+  border-bottom: 1px solid #2a2f3d;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding: 24px 32px;
+}
+
+.video-panel, .output-panel, .guide-panel {
+  background: #171b26;
+  border: 1px solid #2a2f3d;
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.video-panel {
+  flex: 1 1 480px;
+}
+
+.output-panel, .guide-panel {
+  flex: 1 1 320px;
+}
+
+.video-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+}
+
+video, #overlay-canvas {
+  width: 100%;
+  max-width: 560px;
+  border-radius: 8px;
+}
+
+video {
+  background: #000;
+  display: block;
+  transform: scaleX(-1); /* mirror, feels natural for the signer */
+}
+
+#overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  /* No mirror here: the server already flips the frame before detection
+     (to match record_presets.py), so returned landmark coordinates are
+     already in the same mirrored orientation as the <video> above. */
+}
+
+.confidence-bar {
+  margin-top: 10px;
+  height: 8px;
+  border-radius: 4px;
+  background: #0d1017;
+  overflow: hidden;
+}
+
+#confidence-fill {
+  height: 100%;
+  width: 0%;
+  background: #4ade80;
+  transition: width 0.15s ease-out;
+}
+
+.controls {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+button:disabled {
+  background: #3a3f4d;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+#status {
+  margin-top: 10px;
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+#current-word {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #4ade80;
+  min-height: 3rem;
+}
+
+#transcript {
+  margin-top: 8px;
+  min-height: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: #0d1017;
+  border-radius: 6px;
+  padding: 10px;
+  line-height: 2.2;
+}
+
+#transcript .word {
+  display: inline-block;
+  background: #1f2937;
+  padding: 4px 10px;
+  border-radius: 14px;
+  margin: 3px;
+  font-size: 0.9rem;
+}
+
+.guide-hint {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  margin-top: -6px;
+}
+
+.guide-hint code {
+  background: #0d1017;
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+
+.guide-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.guide-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.guide-letter.recorded {
+  background: #14532d;
+  color: #4ade80;
+}
+
+.guide-letter.missing {
+  background: #1f2430;
+  color: #4b5563;
+}
+
+.guide-panel h3 {
+  margin: 16px 0 8px;
+  font-size: 0.95rem;
+  color: #d1d5db;
+}
+
+.guide-desc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.guide-desc-list li {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  line-height: 1.4;
+  background: #0d1017;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.guide-desc-letter {
+  display: inline-block;
+  min-width: 1.4em;
+  font-weight: 700;
+  color: #60a5fa;
+  margin-right: 4px;
+}

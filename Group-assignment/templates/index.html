@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Sign Language Recognition &amp; Speech Conversion</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <header>
+    <h1>Automated Sign Language Recognition &amp; Speech Conversion System</h1>
+  </header>
+
+  <main>
+    <section class="video-panel">
+      <div class="video-wrap">
+        <video id="webcam" autoplay playsinline muted></video>
+        <canvas id="overlay-canvas"></canvas>
+      </div>
+      <canvas id="capture-canvas" hidden></canvas>
+      <div class="controls">
+        <button id="start-btn">Start Camera</button>
+        <button id="stop-btn" disabled>Stop</button>
+        <label><input type="checkbox" id="speak-toggle" checked> Speak recognized words</label>
+      </div>
+      <div class="confidence-bar"><div id="confidence-fill"></div></div>
+      <p id="status">Camera stopped.</p>
+    </section>
+
+    <section class="output-panel">
+      <h2>Recognized Speech</h2>
+      <div id="current-word">&mdash;</div>
+      <h3>Transcript</h3>
+      <div id="transcript"></div>
+      <button id="clear-btn">Clear transcript</button>
+    </section>
+
+    <section class="guide-panel">
+      <h2>Sign Guide</h2>
+      <p class="guide-hint">Hold the ASL hand shape for a letter steady in front of the camera. Grey letters haven't been recorded yet &mdash; run <code>model/record_presets.py</code> to add them.</p>
+      <div class="guide-grid">
+        {% for entry in sign_guide %}
+        <span class="guide-letter {{ 'recorded' if entry.recorded else 'missing' }}" title="{{ entry.description }}">{{ entry.word }}</span>
+        {% endfor %}
+      </div>
+      <h3>How to form each sign</h3>
+      <ul class="guide-desc-list">
+        {% for entry in sign_guide %}
+        <li><span class="guide-desc-letter">{{ entry.word }}</span> {{ entry.description }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+  </main>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

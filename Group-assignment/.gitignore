@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+venv/
+.venv/
+model/*.task
+model/sign_presets.json
